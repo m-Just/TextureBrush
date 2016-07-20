@@ -52,7 +52,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\SDK\Visual Leak Detector\include;..\SDK\opengl\include;..\SDK\glfw-3.2.bin.WIN32\include;..\SDK\glm\glm_0.9.6.3;..\SDK\boost_1_61_0;..\SDK\DevIL-SDK-x86-1.7.8\include;..\SDK\MeshGeodesics\gw_core;..\SDK\MeshGeodesics\gw_maths;..\SDK\MeshGeodesics\gw_geodesic</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\SDK\Visual Leak Detector\include;..\SDK\opengl\include;..\SDK\glfw-3.2.bin.WIN32\include;..\SDK\glm\glm_0.9.6.3;C:\local\boost_1_61_0;..\SDK\DevIL-SDK-x86-1.7.8\include;..\SDK\MeshGeodesics\gw_core;..\SDK\MeshGeodesics\gw_maths;..\SDK\MeshGeodesics\gw_geodesic</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

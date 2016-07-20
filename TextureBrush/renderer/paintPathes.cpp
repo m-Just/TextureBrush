@@ -171,6 +171,7 @@ void CPaintPathes::compute3dPath()
 				cout << "Vertices are " << pTriIndices[curTriIdx][0] << " " << pTriIndices[curTriIdx][1] << " " << pTriIndices[curTriIdx][2] << endl;
 				cout << "Adding vertex " << pTriIndices[curTriIdx][0] << ", " << pTriIndices[curTriIdx][1] << endl;
 				cout << endl;
+
 			}
 			else {
 				int pointStatus[3] = { 0 };
@@ -206,6 +207,10 @@ void CPaintPathes::compute3dPath()
 						bannedVerIdxSet.insert(pTriIndices[curTriIdx][i]);
 				}
 			}
+
+			vec3 pos;
+			CBrushGlobalRes::s_pGeodesicMesh->getVertexPos(pTriIndices[curTriIdx][0], &pos);
+			cout << "Is at " << pos.x << ", " << pos.y << ", " << pos.z << endl;
 
 			pTriMarkData[curTriIdx * 3 + 0] = pTriMarkData[curTriIdx * 3 + 1] = pTriMarkData[curTriIdx * 3 + 2] = 1.0f;
 

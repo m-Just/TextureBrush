@@ -294,3 +294,10 @@ void CGeodesicMesh::refinePath(int startIdx)
 		m_pathPointVec.resize(idx0);
 	}
 }
+
+
+void CGeodesicMesh::getVertexPos(int idx, vec3* buff) {
+	vec3* pVertices;
+	pVertices = m_pTriMesh->getVertices();
+	*buff = pVertices[idx];
+}

@@ -24,6 +24,7 @@ public:
 	void computeGeodesics(float *pDis);
 	void refinePath(int startIdx);
 	void computePath(int startIdx, int endIdx);
+	void getVertexPos(int idx, vec3* buff);
 
 	float getStopDistance(){ return m_stopDistance; }
 	const vector<int>& getZeroOrderPathIdxVec(){ return m_zeroOrderPathIdxVec; }
