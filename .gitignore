@@ -4,3 +4,5 @@
 # git ignore generated code
 /Debug
 /Release
+
+*.sdf
