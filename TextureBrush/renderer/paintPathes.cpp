@@ -1,6 +1,7 @@
 #include "paintPathes.h"
 
 #include <set>
+#include <cmath>
 
 #include "pixelBufferObject.h"
 #include "renderSystemConfig.h"
@@ -128,6 +129,8 @@ void CPaintPathes::compute3dPath()
 		bannedVerIdxSet.clear();
 		//Test End
 
+		vector<int> CN;
+
 		for (int pointIdx = 0; pointIdx < m_pathVec[pathIdx].size(); ++pointIdx)
 		{
 			ivec2 curPointScreenPos = m_pathVec[pathIdx][pointIdx];
@@ -143,6 +146,7 @@ void CPaintPathes::compute3dPath()
 
 			// Add triangle index to set
 			curveTriangleIdxSet.insert(curTriIdx);
+			CN.push_back(curTriIdx);
 
 			// A simple scheme to add vertex index
 			/*cout << "Size is " << pTriIndices[curTriIdx].length() << endl;
@@ -156,6 +160,7 @@ void CPaintPathes::compute3dPath()
 			newPathTriangleIdxVec.push_back(pTriIndices[curTriIdx][1]);
 			}*/
 
+			/*
 			// An advanced scheme to add vertex index
 			if (pointIdx == 0) {
 				int i;
@@ -206,11 +211,33 @@ void CPaintPathes::compute3dPath()
 					if (pointStatus[i] != 1)
 						bannedVerIdxSet.insert(pTriIndices[curTriIdx][i]);
 				}
-			}
+			}*/
+			int TriNum = 0;
 
-			vec3 pos;
-			CBrushGlobalRes::s_pGeodesicMesh->getVertexPos(pTriIndices[curTriIdx][0], &pos);
-			cout << "Is at " << pos.x << ", " << pos.y << ", " << pos.z << endl;
+			int MinP;
+			float MinD = -1;
+			for (int i = 0; i < 3; i++)
+			{
+				vec3 pos;
+				CBrushGlobalRes::s_pGeodesicMesh->getVertexPos(pTriIndices[CN[TriNum]][i], &pos);
+				float dist = DistanceFromPointToPath(pos, m_pathPointVec);
+				if (dist < MinD || MinD < 0)
+				{
+					MinD = dist;
+					MinP = pTriIndices[TriNum][i];
+				}
+
+			}//In the first triangle, choose the minimum distance point .
+
+			newPathTriangleIdxVec.push_back(MinP);// insert the chosen point
+			for (int i = CN.size() - 1; i > TriNum; i--)
+			{
+				if (MinP == pTriIndices[CN[i]][0] || MinP == pTriIndices[CN[i]][1] || MinP == pTriIndices[CN[i]][2])
+				{
+					AddPointFunc(i, pTriIndices, m_pathPointVec, newPathTriangleIdxVec, CN);
+					return;
+				}
+			}
 
 			pTriMarkData[curTriIdx * 3 + 0] = pTriMarkData[curTriIdx * 3 + 1] = pTriMarkData[curTriIdx * 3 + 2] = 1.0f;
 
@@ -307,7 +334,7 @@ void CPaintPathes::collectVertexVectors()
 //**************************************************************************
 void CPaintPathes::calculateEquidisLineSegments()
 {
-
+	
 }
 
 //**************************************************************************
@@ -323,4 +350,62 @@ void CPaintPathes::calculateEquidisLineSegments()
 void CPaintPathes::assignLocalTexcoords()
 {
 
+}
+
+
+float CPaintPathes::DistanceFromPointToPath(vec3 point, vector<ivec2> m_pathPointVec)
+{
+	GLdouble modelview[16];
+	glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
+	GLdouble projection[16];
+	glGetDoublev(GL_PROJECTION_MATRIX, projection);
+	GLint viewport[4];
+	glGetIntegerv(GL_VIEWPORT, viewport);
+
+	float depth;
+	float MinD = -1;
+	GLdouble objPos[3];
+
+	for (int i = 0; i < m_pathPointVec.size(); i++)
+	{
+		glReadPixels(m_pathPointVec[i].x, m_pathPointVec[i].y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+		//cout << "Depth is " << depth << endl;
+		gluUnProject(m_pathPointVec[i].x, m_pathPointVec[i].y, depth, modelview, projection, viewport, &objPos[0], &objPos[1], &objPos[2]);
+
+		float Distance = sqrt(pow(point.x - objPos[0], 2) + pow(point.y - objPos[1], 2) + pow(point.z - objPos[2], 2));
+
+		if (Distance < MinD || MinD < 0)
+			MinD = Distance;
+	}
+	return MinD;
+}
+
+
+//assume the return value is a distance with type float
+void CPaintPathes::AddPointFunc(int TriNum, ivec3* pTriIndices, vector<ivec2> m_pathPointVec, vector<int> &newPathTriangleIdxVec, vector<int> &CN)
+{
+	float MinD = -1;
+	int MinP;
+	for (int i = 0; i < 3; i++)
+	{
+		//if (£¡newPathTriangleIdxVec.find(pTriIndices[CN[TriNum]][i]))	//the point i is not be chosen 
+		vec3 pos;
+		CBrushGlobalRes::s_pGeodesicMesh->getVertexPos(pTriIndices[CN[TriNum]][i], &pos);
+		float dist = DistanceFromPointToPath(pos, m_pathPointVec);
+		if (dist < MinD || MinD < 0)
+		{
+			MinD = dist;
+			MinP = pTriIndices[CN[TriNum]][i];
+		}
+	}
+	newPathTriangleIdxVec.push_back(MinP);// insert the chosen point
+	for (int i = CN.size() - 1; i > TriNum; i--)
+	{
+		if (MinP == pTriIndices[CN[i]][0] || MinP == pTriIndices[CN[i]][1] || MinP == pTriIndices[CN[i]][2])
+		{
+			AddPointFunc(i, pTriIndices, m_pathPointVec, newPathTriangleIdxVec, CN);
+			return;
+		}
+	}
+	return;
 }
