@@ -19,8 +19,7 @@ public:
 	void extractTriangleIndexTexture(GLuint texId);
 	void compute3dPath();
 
-	float DistanceFromPointToPath(vec3 point, vector<ivec2> m_pathPointVec);
-	void AddPointFunc(int TriNum, ivec3* pTriIndices, vector<ivec2> m_pathPointVec, vector<int> &newPathTriangleIdxVec, vector<int> &CN);
+	void AddVertex(int triIdx, ivec3* pTriIndices, vec3* point, vector<int> &newPathTriangleIdxVec);
 
 	const vector<ivec2>& getPathPointVec(){ return m_pathPointVec; }
 	const vector<vector<ivec2> >& getPathVec(){ return m_pathVec; }

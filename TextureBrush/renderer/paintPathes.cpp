@@ -122,15 +122,7 @@ void CPaintPathes::compute3dPath()
 
 		cout << "Info: New path in 3D" << endl;
 
-		//Test
-		set<int> chosenVerIdxSet;
-		set<int> bannedVerIdxSet;
-		chosenVerIdxSet.clear();
-		bannedVerIdxSet.clear();
-		//Test End
-
-		vector<int> CN;
-
+		int lastTriIdx = -9;
 		for (int pointIdx = 0; pointIdx < m_pathVec[pathIdx].size(); ++pointIdx)
 		{
 			ivec2 curPointScreenPos = m_pathVec[pathIdx][pointIdx];
@@ -144,103 +136,30 @@ void CPaintPathes::compute3dPath()
 				continue;
 			}
 
+			if (curTriIdx == lastTriIdx) continue;
+
+			GLdouble modelview[16];
+			glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
+			GLdouble projection[16];
+			glGetDoublev(GL_PROJECTION_MATRIX, projection);
+			GLint viewport[4];
+			glGetIntegerv(GL_VIEWPORT, viewport);
+
+			float depth;
+			GLdouble objPos[3];
+			glReadPixels(curPointScreenPos[0], curPointScreenPos[1], 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+			//cout << "Depth is " << depth << endl;
+			gluUnProject(curPointScreenPos[0], curPointScreenPos[1], depth, modelview, projection, viewport, &objPos[0], &objPos[1], &objPos[2]);
+			
+			vec3* point = new vec3(objPos[0], objPos[1], objPos[2]);
+			AddVertex(curTriIdx, pTriIndices, point, newPathTriangleIdxVec);
+
 			// Add triangle index to set
 			curveTriangleIdxSet.insert(curTriIdx);
-			CN.push_back(curTriIdx);
-
-			// A simple scheme to add vertex index
-			/*cout << "Size is " << pTriIndices[curTriIdx].length() << endl;
-			cout << "Three points are " << pTriIndices[curTriIdx][0] << " " << pTriIndices[curTriIdx][1] << " " << pTriIndices[curTriIdx][2] << endl;
-			if (newPathTriangleIdxVec.size() == 0 || (pTriIndices[curTriIdx][0] != newPathTriangleIdxVec[newPathTriangleIdxVec.size() - 1]))
-			{
-			newPathTriangleIdxVec.push_back(pTriIndices[curTriIdx][0]);
-			}
-			else
-			{
-			newPathTriangleIdxVec.push_back(pTriIndices[curTriIdx][1]);
-			}*/
-
-			/*
-			// An advanced scheme to add vertex index
-			if (pointIdx == 0) {
-				int i;
-				newPathTriangleIdxVec.push_back(pTriIndices[curTriIdx][0]);
-				newPathTriangleIdxVec.push_back(pTriIndices[curTriIdx][1]);
-				chosenVerIdxSet.insert(pTriIndices[curTriIdx][0]);
-				chosenVerIdxSet.insert(pTriIndices[curTriIdx][1]);
-				for (i = 2; i < pTriIndices[curTriIdx].length(); i++) {
-					bannedVerIdxSet.insert(pTriIndices[curTriIdx][i]);
-				}
-
-				cout << "Triangle " << curTriIdx << " Size " << pTriIndices[curTriIdx].length() << endl;
-				cout << "Vertices are " << pTriIndices[curTriIdx][0] << " " << pTriIndices[curTriIdx][1] << " " << pTriIndices[curTriIdx][2] << endl;
-				cout << "Adding vertex " << pTriIndices[curTriIdx][0] << ", " << pTriIndices[curTriIdx][1] << endl;
-				cout << endl;
-
-			}
-			else {
-				int pointStatus[3] = { 0 };
-				int chosenCounter = 2;
-				int i;
-				for (i = 0; i < pTriIndices[curTriIdx].length(); i++) {
-					if (chosenVerIdxSet.find(pTriIndices[curTriIdx][i]) != chosenVerIdxSet.end()) {
-						pointStatus[i] = 1;
-						chosenCounter--;
-					}
-					if (bannedVerIdxSet.find(pTriIndices[curTriIdx][i]) != bannedVerIdxSet.end()) {
-						pointStatus[i] = -1;
-					}
-				}
-				for (i = 0; i < pTriIndices[curTriIdx].length() && chosenCounter > 0; i++) {
-					if (pointStatus[i] == 0) {
-						cout << "Triangle " << curTriIdx << " Size " << pTriIndices[curTriIdx].length() << endl;
-						cout << "Vertices are "
-							<< pTriIndices[curTriIdx][0] << "(" << pointStatus[0] << ") "
-							<< pTriIndices[curTriIdx][1] << "(" << pointStatus[1] << ") "
-							<< pTriIndices[curTriIdx][2] << "(" << pointStatus[2] << ") " << endl;
-						cout << "Adding vertex " << pTriIndices[curTriIdx][i] << endl;
-						cout << endl;
-
-						pointStatus[i] = 1;
-						newPathTriangleIdxVec.push_back(pTriIndices[curTriIdx][i]);
-						chosenVerIdxSet.insert(pTriIndices[curTriIdx][i]);
-						chosenCounter = 0;
-					}
-				}
-				for (i = 0; i < pTriIndices[curTriIdx].length(); i++) {
-					if (pointStatus[i] != 1)
-						bannedVerIdxSet.insert(pTriIndices[curTriIdx][i]);
-				}
-			}*/
-			int TriNum = 0;
-
-			int MinP;
-			float MinD = -1;
-			for (int i = 0; i < 3; i++)
-			{
-				vec3 pos;
-				CBrushGlobalRes::s_pGeodesicMesh->getVertexPos(pTriIndices[CN[TriNum]][i], &pos);
-				float dist = DistanceFromPointToPath(pos, m_pathPointVec);
-				if (dist < MinD || MinD < 0)
-				{
-					MinD = dist;
-					MinP = pTriIndices[TriNum][i];
-				}
-
-			}//In the first triangle, choose the minimum distance point .
-
-			newPathTriangleIdxVec.push_back(MinP);// insert the chosen point
-			for (int i = CN.size() - 1; i > TriNum; i--)
-			{
-				if (MinP == pTriIndices[CN[i]][0] || MinP == pTriIndices[CN[i]][1] || MinP == pTriIndices[CN[i]][2])
-				{
-					AddPointFunc(i, pTriIndices, m_pathPointVec, newPathTriangleIdxVec, CN);
-					return;
-				}
-			}
 
 			pTriMarkData[curTriIdx * 3 + 0] = pTriMarkData[curTriIdx * 3 + 1] = pTriMarkData[curTriIdx * 3 + 2] = 1.0f;
 
+			lastTriIdx = curTriIdx;
 		}
 	}
 
@@ -353,59 +272,27 @@ void CPaintPathes::assignLocalTexcoords()
 }
 
 
-float CPaintPathes::DistanceFromPointToPath(vec3 point, vector<ivec2> m_pathPointVec)
-{
-	GLdouble modelview[16];
-	glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
-	GLdouble projection[16];
-	glGetDoublev(GL_PROJECTION_MATRIX, projection);
-	GLint viewport[4];
-	glGetIntegerv(GL_VIEWPORT, viewport);
-
-	float depth;
+void CPaintPathes::AddVertex(int triIdx, ivec3* pTriIndices, vec3* point, vector<int> &newPathTriangleIdxVec) {
 	float MinD = -1;
-	GLdouble objPos[3];
+	int MinVI = -1;
+	ivec3 triangle = pTriIndices[triIdx];
 
-	for (int i = 0; i < m_pathPointVec.size(); i++)
-	{
-		glReadPixels(m_pathPointVec[i].x, m_pathPointVec[i].y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
-		//cout << "Depth is " << depth << endl;
-		gluUnProject(m_pathPointVec[i].x, m_pathPointVec[i].y, depth, modelview, projection, viewport, &objPos[0], &objPos[1], &objPos[2]);
-
-		float Distance = sqrt(pow(point.x - objPos[0], 2) + pow(point.y - objPos[1], 2) + pow(point.z - objPos[2], 2));
-
-		if (Distance < MinD || MinD < 0)
-			MinD = Distance;
-	}
-	return MinD;
-}
-
-
-//assume the return value is a distance with type float
-void CPaintPathes::AddPointFunc(int TriNum, ivec3* pTriIndices, vector<ivec2> m_pathPointVec, vector<int> &newPathTriangleIdxVec, vector<int> &CN)
-{
-	float MinD = -1;
-	int MinP;
-	for (int i = 0; i < 3; i++)
-	{
-		//if (£¡newPathTriangleIdxVec.find(pTriIndices[CN[TriNum]][i]))	//the point i is not be chosen 
-		vec3 pos;
-		CBrushGlobalRes::s_pGeodesicMesh->getVertexPos(pTriIndices[CN[TriNum]][i], &pos);
-		float dist = DistanceFromPointToPath(pos, m_pathPointVec);
-		if (dist < MinD || MinD < 0)
-		{
+	for (int i = 0; i < 3; i++) {
+		vec3* verPos = new vec3();
+		CBrushGlobalRes::s_pGeodesicMesh->getVertexPos(triangle[i], verPos);
+		float dist = sqrt(pow(verPos->x - point->x, 2) + 
+						  pow(verPos->y - point->y, 2) + 
+						  pow(verPos->z - point->z, 2));
+		if (dist < MinD || MinD < 0) {
 			MinD = dist;
-			MinP = pTriIndices[CN[TriNum]][i];
+			MinVI = triangle[i];
 		}
 	}
-	newPathTriangleIdxVec.push_back(MinP);// insert the chosen point
-	for (int i = CN.size() - 1; i > TriNum; i--)
-	{
-		if (MinP == pTriIndices[CN[i]][0] || MinP == pTriIndices[CN[i]][1] || MinP == pTriIndices[CN[i]][2])
-		{
-			AddPointFunc(i, pTriIndices, m_pathPointVec, newPathTriangleIdxVec, CN);
-			return;
-		}
+
+	if (MinVI < 0) {
+		cout << "Error: MinVI = " << MinVI << endl;
+		return;
 	}
-	return;
+
+	newPathTriangleIdxVec.push_back(MinVI);
 }
