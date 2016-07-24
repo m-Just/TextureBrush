@@ -180,6 +180,59 @@ void CPaintPathes::compute3dPath()
 			}
 		}
 
+		// we need a more function to delete 3-point association 
+		// a stupid algorithm by neway 
+		for (int i = 0; i < CN.size(); i++)
+		{
+			vector<int>::iterator iter1 = find(newPathTriangleIdxVec.begin(), newPathTriangleIdxVec.end(), pTriIndices[CN[i]][0]);
+			vector<int>::iterator iter2 = find(newPathTriangleIdxVec.begin(), newPathTriangleIdxVec.end(), pTriIndices[CN[i]][1]);
+			vector<int>::iterator iter3 = find(newPathTriangleIdxVec.begin(), newPathTriangleIdxVec.end(), pTriIndices[CN[i]][2]);
+			if (iter1 != newPathTriangleIdxVec.end() && iter2 != newPathTriangleIdxVec.end() && iter3 != newPathTriangleIdxVec.end())// three points are all be chosen
+			{
+				for (int j = 0; j < newPathTriangleIdxVec.size(); j++)// find the place of the point which should be deleted
+				{
+					if (newPathTriangleIdxVec[j] == pTriIndices[CN[i]][0] )
+					{
+						if (newPathTriangleIdxVec[j + 1] == pTriIndices[CN[i]][1])
+						{
+							newPathTriangleIdxVec.erase(iter2);// delete the middle one
+							break;
+						}
+						if (newPathTriangleIdxVec[j + 1] == pTriIndices[CN[i]][2])
+						{
+							newPathTriangleIdxVec.erase(iter3);// delete the middle one
+							break;
+						}
+					}
+					if (newPathTriangleIdxVec[j] == pTriIndices[CN[i]][1])
+					{
+						if (newPathTriangleIdxVec[j + 1] == pTriIndices[CN[i]][0])
+						{
+							newPathTriangleIdxVec.erase(iter1);// delete the middle one
+							break;
+						}
+						if (newPathTriangleIdxVec[j + 1] == pTriIndices[CN[i]][2])
+						{
+							newPathTriangleIdxVec.erase(iter3);// delete the middle one
+							break;
+						}
+					}
+					if (newPathTriangleIdxVec[j] == pTriIndices[CN[i]][2])
+					{
+						if (newPathTriangleIdxVec[j + 1] == pTriIndices[CN[i]][1])
+						{
+							newPathTriangleIdxVec.erase(iter2);// delete the middle one
+							break;
+						}
+						if (newPathTriangleIdxVec[j + 1] == pTriIndices[CN[i]][0])
+						{
+							newPathTriangleIdxVec.erase(iter1);// delete the middle one
+							break;
+						}
+					}
+				}
+			}
+		}
 	}
 
 	float *pDisData = new float[CBrushGlobalRes::s_pSmoothMesh->getVerNum()];
