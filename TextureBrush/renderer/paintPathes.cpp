@@ -147,9 +147,10 @@ void CPaintPathes::compute3dPath()
 
 			float depth;
 			GLdouble objPos[3];
-			glReadPixels(curPointScreenPos[0], curPointScreenPos[1], 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+			glReadPixels(curPointScreenPos[0], winHeight- curPointScreenPos[1], 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+			glReadPixels(curPointScreenPos[0], winHeight - curPointScreenPos[1], 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
 			//cout << "Depth is " << depth << endl;
-			gluUnProject(curPointScreenPos[0], curPointScreenPos[1], depth, modelview, projection, viewport, &objPos[0], &objPos[1], &objPos[2]);
+			gluUnProject(curPointScreenPos[0], winHeight - curPointScreenPos[1], depth, modelview, projection, viewport, &objPos[0], &objPos[1], &objPos[2]);
 			
 			vec3* point = new vec3(objPos[0], objPos[1], objPos[2]);
 			AddVertex(curTriIdx, pTriIndices, point, newPathTriangleIdxVec);
