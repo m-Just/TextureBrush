@@ -19,7 +19,7 @@ public:
 	void extractTriangleIndexTexture(GLuint texId);
 	void compute3dPath();
 
-	void AddVertex(int triIdx, ivec3* pTriIndices, vec3* point, vector<int> &newPathTriangleIdxVec);
+	void AddVertex(int triIdx, ivec3* pTriIndices, vec3* point, vector<int> &newPathTriangleIdxVec, set<int> &newPathTriangleIdxSet, set<int> &curveTriangleIdxSet);
 
 	const vector<ivec2>& getPathPointVec(){ return m_pathPointVec; }
 	const vector<vector<ivec2> >& getPathVec(){ return m_pathVec; }

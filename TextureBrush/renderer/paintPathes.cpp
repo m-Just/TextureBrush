@@ -111,18 +111,43 @@ void CPaintPathes::compute3dPath()
 	}
 
 	vector<int> newPathTriangleIdxVec;
+	set<int> newPathTriangleIdxSet;
 	vector<vec3> newPathPointVec3D;
 	set<int> curveTriangleIdxSet; // Set to maintain triangle index on curve to keep unique
+	
 	// Only one path currently
 	for (int pathIdx = 0; pathIdx < m_pathVec.size(); ++pathIdx)
 	{
 		newPathTriangleIdxVec.clear();
+		newPathTriangleIdxSet.clear();
 		newPathPointVec3D.clear();
 		curveTriangleIdxSet.clear();
 
 		cout << "Info: New path in 3D" << endl;
 
 		int lastTriIdx = -9;
+		for (int pointIdx = 0; pointIdx < m_pathVec[pathIdx].size(); ++pointIdx)
+		{
+			ivec2 curPointScreenPos = m_pathVec[pathIdx][pointIdx];
+			int pixelIdx = (winHeight - curPointScreenPos[1] - 1) * winWidth + curPointScreenPos[0];
+
+			// Fetch vertex index from frame buffer texture
+			int curTriIdx = m_pTriangleIdxData[pixelIdx] - 1;
+
+			if (curTriIdx < 0 || curTriIdx >= CBrushGlobalRes::s_pSmoothMesh->getTriNum())
+			{
+				continue;
+			}
+
+			if (curTriIdx == lastTriIdx) continue;
+
+			// Add triangle index to set
+			curveTriangleIdxSet.insert(curTriIdx);
+			pTriMarkData[curTriIdx * 3 + 0] = pTriMarkData[curTriIdx * 3 + 1] = pTriMarkData[curTriIdx * 3 + 2] = 1.0f;
+			lastTriIdx = curTriIdx;
+		}
+
+		lastTriIdx = -9;
 		for (int pointIdx = 0; pointIdx < m_pathVec[pathIdx].size(); ++pointIdx)
 		{
 			ivec2 curPointScreenPos = m_pathVec[pathIdx][pointIdx];
@@ -153,14 +178,7 @@ void CPaintPathes::compute3dPath()
 			gluUnProject(curPointScreenPos[0], winHeight - curPointScreenPos[1], depth, modelview, projection, viewport, &objPos[0], &objPos[1], &objPos[2]);
 			
 			vec3* point = new vec3(objPos[0], objPos[1], objPos[2]);
-			AddVertex(curTriIdx, pTriIndices, point, newPathTriangleIdxVec);
-
-			// Add triangle index to set
-			curveTriangleIdxSet.insert(curTriIdx);
-
-			pTriMarkData[curTriIdx * 3 + 0] = pTriMarkData[curTriIdx * 3 + 1] = pTriMarkData[curTriIdx * 3 + 2] = 1.0f;
-
-			lastTriIdx = curTriIdx;
+			AddVertex(curTriIdx, pTriIndices, point, newPathTriangleIdxVec, newPathTriangleIdxSet, curveTriangleIdxSet);
 		}
 	}
 
@@ -195,11 +213,43 @@ void CPaintPathes::compute3dPath()
 	//			pls modify correspondingly.
 	//*********************************************************************************
 
-	/*cout << "Altogeter " << curveTriangleIdxSet.size() << " vertices" << endl;
+	/*
+	for (int pathIdx = 0; pathIdx < m_pathVec.size(); ++pathIdx) {
+		//int* hashArr;
+		//hashArr = (int*)malloc(sizeof(pTriIndices) / sizeof(ivec3) * sizeof(int) * 5);
+		ivec3 hashArr[10000];
+		for (int i = 0; i < 10000; i++)
+			hashArr[i][0] = hashArr[i][1] = hashArr[i][2] = 0;
 
-	for (int verIdx = 0; verIdx < newPathTriangleIdxVec.size(); ++verIdx)
-	{
-	cout << verIdx << " " << newPathTriangleIdxVec[verIdx] << endl;
+		set<int>::iterator it;
+		for (it = curveTriangleIdxSet.begin(); it != curveTriangleIdxSet.end(); it++) {
+			ivec3 triangle = pTriIndices[*it];
+			for (int i = 0; i < 3; i++) {
+				hashArr[*it][i]++;
+			}
+		}
+
+		for (it = curveTriangleIdxSet.begin(); it != curveTriangleIdxSet.end(); it++) {
+			ivec3 triangle = pTriIndices[*it];
+			if (hashArr[*it][0] >= 2 && hashArr[*it][1] >= 2 && hashArr[*it][2] >= 2) {
+				int bypass = 0;
+				int min = hashArr[*it][0];
+				for (int i = 1; i < 3; i++) {
+					if (hashArr[*it][i] < min) {
+						bypass = i;
+						min = hashArr[*it][i];
+					}
+				}
+				vector<int>::iterator vit;
+				for (vit = newPathTriangleIdxVec.begin(); vit != newPathTriangleIdxVec.end(); vit++) {
+					if (*vit == bypass) {
+						int idx = pTriIndices[*it][bypass];
+						newPathTriangleIdxVec.erase(vit);
+						hashArr[*it][bypass]--;
+					}
+				}
+			}
+		}
 	}*/
 
 	CBrushGlobalRes::s_pGeodesicMesh->resetGeoMesh();
@@ -273,7 +323,7 @@ void CPaintPathes::assignLocalTexcoords()
 }
 
 
-void CPaintPathes::AddVertex(int triIdx, ivec3* pTriIndices, vec3* point, vector<int> &newPathTriangleIdxVec) {
+void CPaintPathes::AddVertex(int triIdx, ivec3* pTriIndices, vec3* point, vector<int> &newPathTriangleIdxVec, set<int> &newPathTriangleIdxSet, set<int> &curveTriangleIdxSet) {
 	float MinD = -1;
 	int MinVI = -1;
 	ivec3 triangle = pTriIndices[triIdx];
@@ -281,9 +331,9 @@ void CPaintPathes::AddVertex(int triIdx, ivec3* pTriIndices, vec3* point, vector
 	for (int i = 0; i < 3; i++) {
 		vec3* verPos = new vec3();
 		CBrushGlobalRes::s_pGeodesicMesh->getVertexPos(triangle[i], verPos);
-		float dist = sqrt(pow(verPos->x - point->x, 2) + 
-						  pow(verPos->y - point->y, 2) + 
-						  pow(verPos->z - point->z, 2));
+		float dist = sqrt(pow(verPos->x - point->x, 2) +
+			pow(verPos->y - point->y, 2) +
+			pow(verPos->z - point->z, 2));
 		if (dist < MinD || MinD < 0) {
 			MinD = dist;
 			MinVI = triangle[i];
@@ -295,5 +345,34 @@ void CPaintPathes::AddVertex(int triIdx, ivec3* pTriIndices, vec3* point, vector
 		return;
 	}
 
-	newPathTriangleIdxVec.push_back(MinVI);
+	int cnt = 0, flag = 1;
+	set<int>::iterator it;
+	for (it = curveTriangleIdxSet.begin(); it != curveTriangleIdxSet.end(); ++it) {
+		int ver[2];
+		ver[0] = ver[1] = -1;
+		cnt = 0;
+		triangle = pTriIndices[*it];
+		
+		for (int i = 0; i < 3; i++) {
+			if (newPathTriangleIdxSet.find(triangle[i]) != newPathTriangleIdxSet.end()) {
+				ver[cnt] = triangle[i];
+				cnt++;
+			}
+		}
+	
+		if (cnt > 1 && (ver[0] != MinVI && ver[1] != MinVI)) {
+			if (triangle[0] == MinVI || triangle[1] == MinVI || triangle[2] == MinVI) {
+				flag = 0;
+				break;
+			}
+		}
+	}
+
+	if (flag) {
+		newPathTriangleIdxVec.push_back(MinVI);
+		newPathTriangleIdxSet.insert(MinVI);
+	}
+	else {
+		cout << "Ignore vertex " << MinVI << endl;
+	}
 }
