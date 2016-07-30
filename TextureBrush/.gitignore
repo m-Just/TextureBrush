@@ -1,3 +1,8 @@
 # git ignore generated code
 /Debug
 /Release
+
+# git ignore project settings
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user

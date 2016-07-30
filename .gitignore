@@ -5,5 +5,8 @@
 /Debug
 /Release
 
+# git ignore project settings
 *.sdf
 *.opensdf
+*.sln
+*.suo
